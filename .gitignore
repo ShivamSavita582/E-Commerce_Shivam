@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment variables & secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+*.env
+*/.env
+*/.env.*
+!*/.env.example
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+Client/dist/
+
+# Archives & large backups
+*.zip
+*.tar.gz
+*.rar
+Client-zip.zip
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
