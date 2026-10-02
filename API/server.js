@@ -21,23 +21,96 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Dynamic CORS configuration: allows production frontend, Vercel preview URLs, and local development
+const allowedOrigins = [
+  "https://e-commerce-shivam-shdp.vercel.app",
+  "https://e-commerce-shivam.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:5174",
+];
 
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        origin.endsWith(".vercel.app")
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Auth"],
+    credentials: true,
+  })
+);
 
-  app.use(cors({
-  origin: "https://e-commerce-shivam-shdp.vercel.app", // ✅ यहाँ frontend का live URL डालना है
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+// Respond to preflight OPTIONS requests cleanly
+app.options("*", cors());
 
+// Robust Serverless MongoDB connection caching
+let cachedDb = null;
 
-// Health / Home route
+const connectDB = async () => {
+  if (cachedDb && mongoose.connection.readyState >= 1) {
+    return cachedDb;
+  }
+
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    console.error("CRITICAL: MONGO_URI is not set in environment variables!");
+    throw new Error(
+      "MONGO_URI environment variable is missing. Please set MONGO_URI in your Vercel Project Settings > Environment Variables."
+    );
+  }
+
+  try {
+    cachedDb = await mongoose.connect(uri, {
+      dbName: "MERN_E_Commerce",
+      serverSelectionTimeoutMS: 5000,
+    });
+    console.log("MongoDB connected successfully.");
+    return cachedDb;
+  } catch (error) {
+    console.error("MongoDB connection error:", error.message);
+    throw error;
+  }
+};
+
+// Root Health Check Route (does not crash if DB connection is in progress)
 app.get("/", (req, res) =>
   res.json({
     message: "MERN E-Commerce API is running smoothly",
     version: "2.0.0",
     status: "Healthy",
+    mongoConnected: mongoose.connection.readyState === 1,
   })
 );
+
+app.get("/api/health", (req, res) =>
+  res.json({
+    status: "Healthy",
+    time: new Date().toISOString(),
+    mongoConnected: mongoose.connection.readyState === 1,
+  })
+);
+
+// Database connection middleware for all API requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Database connection failed: " + error.message,
+      hint: "Make sure MONGO_URI is added in Vercel Environment Variables and MongoDB Atlas IP access allows 0.0.0.0/0",
+    });
+  }
+});
 
 // API Routes
 app.use("/api/user", userRouter);
@@ -59,18 +132,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-const MONGO_URI =
-  process.env.MONGO_URI;
-  
-
-mongoose
-  .connect(MONGO_URI, {
-    dbName: "MERN_E_Commerce",
-  })
-  .then(() => console.log("MongoDB connected successfully."))
-  .catch((error) => console.log("MongoDB connection error:", error));
-
-const port = process.env.PORT || 2000;
-app.listen(port, () => console.log(`Server is running on port ${port}`));
+// Start local server only outside of Vercel serverless environment
+if (!process.env.VERCEL) {
+  const port = process.env.PORT || 2000;
+  connectDB().catch((err) =>
+    console.warn("Initial DB connection warning:", err.message)
+  );
+  app.listen(port, () => console.log(`Server is running on port ${port}`));
+}
 
 export default app;
