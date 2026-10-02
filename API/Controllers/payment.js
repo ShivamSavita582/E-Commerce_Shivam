@@ -5,8 +5,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_SKj75OJp54Vz8m",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "f2m9dp35JODjuesaW6zdY4Vl",
+  key_id: process.env.RAZORPAY_KEY_ID ,
+  key_secret: process.env.RAZORPAY_KEY_SECRET 
 });
 
 // Checkout - Create Razorpay order
