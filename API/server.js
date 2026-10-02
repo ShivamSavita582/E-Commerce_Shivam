@@ -21,13 +21,14 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  cors({
-    origin: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    credentials: true,
-  })
-);
+
+
+  app.use(cors({
+  origin: "https://e-commerce-shivam-shdp.vercel.app", // ✅ यहाँ frontend का live URL डालना है
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 
 // Health / Home route
 app.get("/", (req, res) =>
@@ -59,8 +60,8 @@ app.use((err, req, res, next) => {
 });
 
 const MONGO_URI =
-  process.env.MONGO_URI ||
-  "mongodb+srv://shivamsinghmahewa7698_db_user:aKCoWAa4mJMYF3hG@cluster0.chl73tb.mongodb.net/";
+  process.env.MONGO_URI;
+  
 
 mongoose
   .connect(MONGO_URI, {
